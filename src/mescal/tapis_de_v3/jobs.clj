@@ -2,6 +2,7 @@
   (:use [clojure.java.io :only [file]]
         [medley.core :only [remove-vals]])
   (:require [clojure.string :as string]
+            [clojure-commons.file-utils :as file-utils]
             [mescal.tapis-de-v3.app-listings :as app-listings]
             [mescal.tapis-de-v3.constants :as c]
             [mescal.tapis-de-v3.job-params :as params]
@@ -33,6 +34,12 @@
     (str (fs/file path-prefix (preprocess-file-param-value v)))
     v))
 
+(defn- preprocess-relative-path-param-value
+  [path-prefix v]
+  (if-not (string/blank? v)
+    (file-utils/path-join path-prefix (preprocess-file-param-value v))
+    v))
+
 (defn- format-param
   [get-config-val runtime is-input-name? is-output-name? {:keys [name arg] :as param}]
   (let [param-type (mp/get-param-type param)
@@ -43,7 +50,7 @@
                                      (preprocess-file-param-value v))
             (is-output-name? name) (if (= runtime "DOCKER")
                                      (preprocess-absolute-path-param-value "/TapisOutput" v)
-                                     (preprocess-file-param-value v))
+                                     (preprocess-relative-path-param-value "output" v))
             (map? v)               (:value v)
             (= param-type "Flag")  (when v arg)
             :else                  (str v))]
